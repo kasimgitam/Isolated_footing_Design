@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isolated Footing Design Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .calculator {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .input-section, .results-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        #results {
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .safety-check {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .safe {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .unsafe {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .adjustment-options {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: 4px;
+        }
+        .calculation-steps {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 4px;
+            border: 1px solid #d0e3ff;
+        }
+        .design-result {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #fff;
+            border-left: 4px solid #3498db;
+        }
+        @media print {
+            body {
+                background: white;
+                font-size: 12pt;
+            }
+            .calculator {
+                max-width: 100%;
+                box-shadow: none;
+                padding: 0;
+            }
+            button {
+                display: none;
+            }
+            .input-section {
+                display: none;
+            }
+            .results-section {
+                border: none;
+                padding: 0;
+            }
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+        }
+        @media (max-width: 600px) {
+            .calculator {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>Isolated Footing Design Calculator</h1>
+        
+        <!-- Input Section -->
+        <div class="input-section">
+            <h2>Input Parameters</h2>
+            <div class="input-group">
+                <label for="axialLoad">Axial Load (P, kN):</label>
+                <input type="number" id="axialLoad" value="1200" step="1">
+            </div>
+            <div class="input-group">
+                <label for="momentX">Moment (M<sub>x</sub>, kNm):</label>
+                <input type="number" id="momentX" value="150" step="1">
+            </div>
+            <div class="input-group">
+                <label for="momentY">Moment (M<sub>y</sub>, kNm):</label>
+                <input type="number" id="momentY" value="80" step="1">
+            </div>
+            <div class="input-group">
+                <label for="columnLength">Column Length (l, mm):</label>
+                <input type="number" id="columnLength" value="400" step="10">
+            </div>
+            <div class="input-group">
+                <label for="columnWidth">Column Width (b, mm):</label>
+                <input type="number" id="columnWidth" value="400" step="10">
+            </div>
+            <div class="input-group">
+                <label for="footingLength">Footing Length (L, m):</label>
+                <input type="number" id="footingLength" step="0.1" min="1">
+            </div>
+            <div class="input-group">
+                <label for="footingWidth">Footing Width (B, m):</label>
+                <input type="number" id="footingWidth" step="0.1" min="1">
+            </div>
+            <div class="input-group">
+                <label for="footingDepth">Footing Depth (D, mm):</label>
+                <input type="number" id="footingDepth" value="500" step="10">
+            </div>
+            <div class="input-group">
+                <label for="soilBearing">Soil Bearing Capacity (q<sub>a</sub>, kN/m²):</label>
+                <input type="number" id="soilBearing" value="200" step="5">
+            </div>
+            <div class="input-group">
+                <label for="concreteGrade">Concrete Grade (f<sub>ck</sub>, MPa):</label>
+                <select id="concreteGrade">
+                    <option value="20">M20</option>
+                    <option value="25" selected>M25</option>
+                    <option value="30">M30</option>
+                    <option value="35">M35</option>
+                    <option value="40">M40</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="steelGrade">Steel Grade (f<sub>y</sub>, MPa):</label>
+                <select id="steelGrade">
+                    <option value="415" selected>Fe 415</option>
+                    <option value="500">Fe 500</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="barDia">Reinforcement Bar Diameter (mm):</label>
+                <select id="barDia">
+                    <option value="8">8 mm</option>
+                    <option value="10">10 mm</option>
+                    <option value="12" selected>12 mm</option>
+                    <option value="16">16 mm</option>
+                    <option value="20">20 mm</option>
+                    <option value="25">25 mm</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="barSpacing">Reinforcement Spacing (mm):</label>
+                <input type="number" id="barSpacing" value="150" step="5" min="50" max="300">
+            </div>
+            <button id="calculateBtn">Calculate</button>
+            <button id="printBtn" onclick="window.print()" style="background: #6c757d;">Print Design Report</button>
+            <button id="downloadPdfBtn" style="background: #28a745;">Download PDF Report</button>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section">
+            <h2>Design Results</h2>
+            <div id="results">
+                <p>Enter inputs and click "Calculate".</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+        document.getElementById('calculateBtn').addEventListener('click', calculateFooting);
+        document.getElementById('downloadPdfBtn').addEventListener('click', downloadPdf);
+
+        let currentCalculations = {};
+        
+        function calculateFooting() {
+            // Get input values
+            const P = parseFloat(document.getElementById('axialLoad').value);
+            const Mx = parseFloat(document.getElementById('momentX').value);
+            const My = parseFloat(document.getElementById('momentY').value);
+            const l = parseFloat(document.getElementById('columnLength').value) / 1000; // mm → m
+            const b = parseFloat(document.getElementById('columnWidth').value) / 1000; // mm → m
+            const Lp = parseFloat(document.getElementById('footingLength').value) || null;
+            const Bp = parseFloat(document.getElementById('footingWidth').value) || null;
+            const D = parseFloat(document.getElementById('footingDepth').value) / 1000; // mm → m
+            const qa = parseFloat(document.getElementById('soilBearing').value);
+            const fck = parseFloat(document.getElementById('concreteGrade').value);
+            const fy = parseFloat(document.getElementById('steelGrade').value);
+            const barDia = parseFloat(document.getElementById('barDia').value);
+            const barSpacing = parseFloat(document.getElementById('barSpacing').value);
+
+            // Clear previous results
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>Design Calculations</h3>';
+            
+            // Step 1: Preliminary Footing Size
+            const selfWeight = 0.1 * P;
+            const totalLoad = P + selfWeight;
+            const requiredArea = totalLoad / qa;
+            
+            resultsDiv.innerHTML += `
+                <div class="design-result">
+                    <h4>1. Preliminary Footing Size</h4>
+                    <p>Self weight of footing = 10% of P = 0.10 × ${P} = ${selfWeight.toFixed(2)} kN</p>
+                    <p>Total load = P + Self weight = ${P} + ${selfWeight.toFixed(2)} = ${totalLoad.toFixed(2)} kN</p>
+                    <p>Required area = Total load / q<sub>a</sub> = ${totalLoad.toFixed(2)} / ${qa} = ${requiredArea.toFixed(2)} m²</p>
+                </div>
+            `;
+            
+            // Footing dimensions (user-provided or calculated)
+            let footingLength = Lp;
+            let footingWidth = Bp;
+            let areaProvided = 0;
+            
+            if (Lp && Bp) {
+                areaProvided = Lp * Bp;
+                resultsDiv.innerHTML += `
+                    <div class="design-result">
+                        <h4>2. User-Specified Footing Dimensions</h4>
+                        <p>Footing size: ${Lp.toFixed(2)} m × ${Bp.toFixed(2)} m</p>
+                        <p>Area provided = ${Lp.toFixed(2)} × ${Bp.toFixed(2)} = ${areaProvided.toFixed(2)} m²</p>
+                        <p>${areaProvided >= requiredArea ? '✓ Area sufficient' : '✗ Area insufficient - increase dimensions'}</p>
+                    </div>
+                `;
+            } else {
+                // Calculate dimensions if not provided
+                footingLength = Math.ceil(Math.sqrt(requiredArea) * 1.1);
+                footingWidth = Math.ceil(Math.sqrt(requiredArea) * 1.1);
+                areaProvided = footingLength * footingWidth;
+                
+                resultsDiv.innerHTML += `
+                    <div class="design-result">
+                        <h4>2. Calculated Footing Dimensions</h4>
+                        <p>Initial trial size: ${footingLength.toFixed(2)} m × ${footingWidth.toFixed(2)} m</p>
+                        <p>Area provided = ${footingLength.toFixed(2)} × ${footingWidth.toFixed(2)} = ${areaProvided.toFixed(2)} m²</p>
+                    </div>
+                `;
+            }
+            
+            // Step 2: Check Soil Pressure
+            let ex = My / P;
+            let ey = Mx / P;
+            let qmax = (totalLoad / areaProvided) * (1 + (6 * ex / footingLength) + (6 * ey / footingWidth));
+            let qmin = (totalLoad / areaProvided) * (1 - (6 * ex / footingLength) - (6 * ey / footingWidth));
+            
+            resultsDiv.innerHTML += `
+                <div class="design-result">
+                    <h4>3. Soil Pressure Check</h4>
+                    <p>Eccentricity e<sub>x</sub> = M<sub>y</sub>/P = ${My}/${P} = ${ex.toFixed(3)} m</p>
+                    <p>Eccentricity e<sub>y</sub> = M<sub>x</sub>/P = ${Mx}/${P} = ${ey.toFixed(3)} m</p>
+                    <p>q<sub>max</sub> = (P/A)(1 + 6e<sub>x</sub>/L + 6e<sub>y</sub>/B) = (${totalLoad.toFixed(2)}/${areaProvided.toFixed(2)})(1 + 6×${ex.toFixed(3)}/${footingLength.toFixed(2)} + 6×${ey.toFixed(3)}/${footingWidth.toFixed(2)}) = ${qmax.toFixed(2)} kN/m²</p>
+                    <p>q<sub>min</sub> = (P/A)(1 - 6e<sub>x</sub>/L - 6e<sub>y</sub>/B) = ${qmin.toFixed(2)} kN/m²</p>
+                    <div class="${qmax <= qa ? 'safety-check safe' : 'safety-check unsafe'}">
+                        ${qmax <= qa ? '✓ SAFE' : '✗ UNSAFE - Consider increasing footing dimensions'}
+                    </div>
+                </div>
+            `;
+            
+            // Step 3: Depth Check (One-Way Shear)
+            let d = D - 0.05; // Effective depth (assuming 50mm cover)
+            let qn = P / areaProvided;
+            let Vu = qn * (footingLength - l - d) * footingWidth;
+            let tau_v = (Vu * 1000) / (footingWidth * 1000 * d * 1000); // Convert to N/mm²
+            
+            // Permissible shear as per IS 456:2000 Table 19
+            let tau_c;
+            switch(fck) {
+                case 20:
+                    tau_c = 0.28; // N/mm² for M20
+                    break;
+                case 25:
+                    tau_c = 0.36; // N/mm² for M25
+                    break;
+                case 30:
+                    tau_c = 0.38; // N/mm² for M30
+                    break;
+                case 35:
+                    tau_c = 0.40; // N/mm² for M35
+                    break;
+                case 40:
+                    tau_c = 0.42; // N/mm² for M40
+                    break;
+                default:
+                    tau_c = 0.36; // Default to M25 if unexpected value
+            }
+            
+            let oneWayShearSafe = tau_v <= tau_c;
+            
+            resultsDiv.innerHTML += `
+                <div class="design-result">
+                    <h4>4. One-Way Shear Check</h4>
+                    <p>Effective depth (d) = D - cover = ${D.toFixed(3)} - 0.05 = ${d.toFixed(3)} m</p>
+                    <p>Net upward pressure (q<sub>n</sub>) = P/A = ${P}/${areaProvided.toFixed(2)} = ${qn.toFixed(2)} kN/m²</p>
+                    <p>Shear force (V<sub>u</sub>) = q<sub>n</sub> × (L - l - d) × B = ${qn.toFixed(2)} × (${footingLength.toFixed(2)} - ${l.toFixed(3)} - ${d.toFixed(3)}) × ${footingWidth.toFixed(2)} = ${Vu.toFixed(2)} kN</p>
+                    <p>Shear stress (τ<sub>v</sub>) = V<sub>u</sub>/(B × d) = ${Vu.toFixed(2)} × 10³/(${footingWidth.toFixed(2)} × 10³ × ${d.toFixed(3)} × 10³) = ${tau_v.toFixed(3)} N/mm²</p>
+                    <p>Permissible shear (τ<sub>c</sub>) = ${tau_c.toFixed(2)} N/mm² (for M${fck} as per IS 456:2000)</p>
+                    <div class="${oneWayShearSafe ? 'safety-check safe' : 'safety-check unsafe'}">
+                        ${oneWayShearSafe ? '✓ SAFE' : '✗ UNSAFE - Consider increasing depth'}
+                    </div>
+                </div>
+            `;
+            
+            // Step 4: Reinforcement Calculation
+            let Mu = qn * Math.pow((footingLength - l), 2) / 8;
+            let Ast_required = (Mu * 1e6) / (0.87 * fy * 0.9 * d * 1000); // in mm²/m
+            let minAst = 0.12 * 1000 * d * 1000 / 100; // 0.12% of bD
+            Ast_required = Math.max(Ast_required, minAst);
+            
+            // Calculate area of steel provided based on user input
+            let barArea = Math.PI * Math.pow(barDia, 2) / 4; // Area of one bar in mm²
+            let Ast_provided = (1000 / barSpacing) * barArea; // mm²/m
+            
+            resultsDiv.innerHTML += `
+                <div class="design-result">
+                    <h4>5. Reinforcement Calculation</h4>
+                    <p>Moment (M<sub>u</sub>) = q<sub>n</sub> × (L - l)²/8 = ${qn.toFixed(2)} × (${footingLength.toFixed(2)} - ${l.toFixed(3)})²/8 = ${Mu.toFixed(2)} kNm/m</p>
+                    <p>Required steel (A<sub>st</sub>) = M<sub>u</sub>/(0.87f<sub>y</sub>jd) = ${Mu.toFixed(2)}×10⁶/(0.87×${fy}×0.9×${d.toFixed(3)}×1000) = ${Ast_required.toFixed(0)} mm²/m</p>
+                    <p>Minimum steel (0.12%) = 0.12% × 1000 × ${(d*1000).toFixed(0)} = ${minAst.toFixed(0)} mm²/m</p>
+                    <p><strong>Provided:</strong> ${barDia} mm @ ${barSpacing} mm c/c = ${Ast_provided.toFixed(0)} mm²/m</p>
+                    <div class="${Ast_provided >= Ast_required ? 'safety-check safe' : 'safety-check unsafe'}">
+                        ${Ast_provided >= Ast_required ? '✓ SAFE (Provided ≥ Required)' : '✗ UNSAFE (Provided < Required)'}
+                    </div>
+                </div>
+            `;
+            
+            // Step 5: Two-Way (Punching) Shear Check
+            let perimeter = 2 * (l + b + 2 * d);
+            let punchingArea = (l + d) * (b + d);
+            let Vup = P - qn * punchingArea;
+            let tau_vp = (Vup * 1000) / (perimeter * 1000 * d * 1000);
+            let k = Math.min(1 + Math.sqrt(200/(d*1000)), 2); // Size effect factor
+            let beta = Math.min(0.5 + (b/l), 1.5); // Column aspect ratio factor
+            let tau_cp = 0.25 * Math.sqrt(fck) * k * beta; // As per IS 456:2000 clause 31.6.3
+            let punchingShearSafe = tau_vp <= tau_cp;
+            
+            resultsDiv.innerHTML += `
+                <div class="design-result">
+                    <h4>6. Two-Way (Punching) Shear Check</h4>
+                    <p>Critical perimeter = 2 × (l + b + 2d) = 2 × (${l.toFixed(3)} + ${b.toFixed(3)} + 2×${d.toFixed(3)}) = ${perimeter.toFixed(2)} m</p>
+                    <p>Punching area = (l + d) × (b + d) = (${l.toFixed(3)} + ${d.toFixed(3)}) × (${b.toFixed(3)} + ${d.toFixed(3)}) = ${punchingArea.toFixed(2)} m²</p>
+                    <p>Punching shear force (V<sub>up</sub>) = P - q<sub>n</sub> × punching area = ${P} - ${qn.toFixed(2)} × ${punchingArea.toFixed(2)} = ${Vup.toFixed(2)} kN</p>
+                    <p>Punching shear stress (τ<sub>vp</sub>) = V<sub>up</sub>/(perimeter × d) = ${Vup.toFixed(2)}×10³/(${perimeter.toFixed(2)}×10³ × ${d.toFixed(3)}×10³) = ${tau_vp.toFixed(3)} N/mm²</p>
+                    <p>Size effect factor (k) = min(1 + √(200/d), 2) = ${k.toFixed(2)}</p>
+                    <p>Column aspect ratio factor (β) = min(0.5 + (b/l), 1.5) = ${beta.toFixed(2)}</p>
+                    <p>Permissible punching shear = 0.25√f<sub>ck</sub> × k × β = 0.25√${fck} × ${k.toFixed(2)} × ${beta.toFixed(2)} = ${tau_cp.toFixed(3)} N/mm²</p>
+                    <div class="${punchingShearSafe ? 'safety-check safe' : 'safety-check unsafe'}">
+                        ${punchingShearSafe ? '✓ SAFE' : '✗ UNSAFE - Consider increasing depth or dimensions'}
+                    </div>
+                </div>
+            `;
+            
+            // Check if design is safe
+            let designSafe = qmax <= qa && oneWayShearSafe && punchingShearSafe && (Ast_provided >= Ast_required);
+            
+            // Store calculations for PDF
+            currentCalculations = {
+                inputs: { P, Mx, My, l, b, D, qa, fck, fy, barDia, barSpacing },
+                results: { 
+                    footingLength, 
+                    footingWidth, 
+                    D, 
+                    d, 
+                    qmax, 
+                    qmin, 
+                    tau_v, 
+                    tau_c, 
+                    tau_vp, 
+                    tau_cp, 
+                    Ast_required,
+                    Ast_provided,
+                    minAst, 
+                    designSafe,
+                    requiredArea,
+                    areaProvided,
+                    k,
+                    beta
+                }
+            };
+            
+            // Display Final Summary
+            resultsDiv.innerHTML += `
+                <div class="design-result" style="background: #f8f9fa; border-left: 4px solid #6c757d;">
+                    <h4>Final Design Summary</h4>
+                    <p><strong>Footing Dimensions:</strong> ${footingLength.toFixed(2)} m × ${footingWidth.toFixed(2)} m × ${D.toFixed(2)} m</p>
+                    <p><strong>Effective Depth (d):</strong> ${(d * 1000).toFixed(0)} mm</p>
+                    <p><strong>Reinforcement:</strong> ${barDia} mm @ ${barSpacing} mm c/c (${Ast_provided.toFixed(0)} mm²/m)</p>
+                    <div class="${designSafe ? 'safety-check safe' : 'safety-check unsafe'}" style="font-size: 1.1em;">
+                        <strong>Overall Design Status:</strong> ${designSafe ? 'SAFE ✓' : 'UNSAFE ✗'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function downloadPdf() {
+            const doc = new jsPDF();
+            
+            // Title
+            doc.setFontSize(16);
+            doc.text("ISOLATED FOOTING DESIGN REPORT", 105, 15, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text(`Design Date: ${new Date().toLocaleDateString()}`, 105, 22, { align: 'center' });
+            
+            // Client/Project Info
+            doc.setFontSize(12);
+            doc.text("Project Information:", 14, 30);
+            doc.setFontSize(10);
+            doc.text("Client: ___________________________", 14, 37);
+            doc.text("Project: ___________________________", 14, 44);
+            doc.text("Location: ___________________________", 14, 51);
+            
+            // Input Parameters
+            doc.setFontSize(12);
+            doc.text("Design Input Parameters:", 14, 65);
+            doc.setFontSize(10);
+            
+            const { inputs, results } = currentCalculations;
+            let y = 72;
+            doc.text(`Axial Load (P): ${inputs.P} kN`, 14, y);
+            doc.text(`Moment (Mx): ${inputs.Mx} kNm`, 110, y);
+            y += 7;
+            doc.text(`Moment (My): ${inputs.My} kNm`, 14, y);
+            doc.text(`Column Size: ${inputs.l*1000} × ${inputs.b*1000} mm`, 110, y);
+            y += 7;
+            doc.text(`Footing Depth: ${inputs.D*1000} mm`, 14, y);
+            doc.text(`Soil Bearing: ${inputs.qa} kN/m²`, 110, y);
+            y += 7;
+            doc.text(`Concrete Grade: M${inputs.fck}`, 14, y);
+            doc.text(`Steel Grade: Fe ${inputs.fy}`, 110, y);
+            y += 7;
+            doc.text(`Reinforcement: ${inputs.barDia} mm @ ${inputs.barSpacing} mm c/c`, 14, y);
+            y += 10;
+            
+            // Design Results
+            doc.setFontSize(12);
+            doc.text("Design Calculations & Results:", 14, y);
+            doc.setFontSize(10);
+            y += 7;
+            
+            doc.text(`1. Required Footing Area: ${results.requiredArea.toFixed(2)} m²`, 14, y);
+            doc.text(`Provided Area: ${results.areaProvided.toFixed(2)} m²`, 110, y);
+            y += 7;
+            doc.text(`2. Footing Dimensions: ${results.footingLength.toFixed(2)} m × ${results.footingWidth.toFixed(2)} m × ${results.D.toFixed(2)} m`, 14, y);
+            y += 7;
+            doc.text(`3. Effective Depth (d): ${(results.d*1000).toFixed(0)} mm (Cover = 50mm)`, 14, y);
+            y += 7;
+            doc.text(`4. Maximum Soil Pressure: ${results.qmax.toFixed(2)} kN/m² (Allowable: ${inputs.qa} kN/m²)`, 14, y);
+            y += 7;
+            doc.text(`5. One-Way Shear: ${results.tau_v.toFixed(3)} N/mm² (Allowable: ${results.tau_c.toFixed(2)} N/mm² for M${inputs.fck})`, 14, y);
+            y += 7;
+            doc.text(`6. Two-Way Shear: ${results.tau_vp.toFixed(3)} N/mm² (Allowable: ${results.tau_cp.toFixed(3)} N/mm²)`, 14, y);
+            y += 7;
+            doc.text(`   Size effect factor (k): ${results.k.toFixed(2)}`, 20, y);
+            y += 7;
+            doc.text(`   Column aspect ratio factor (β): ${results.beta.toFixed(2)}`, 20, y);
+            y += 7;
+            doc.text(`7. Reinforcement Required: ${results.Ast_required.toFixed(0)} mm²/m (Minimum: ${results.minAst.toFixed(0)} mm²/m)`, 14, y);
+            y += 7;
+            doc.text(`   Provided: ${inputs.barDia} mm @ ${inputs.barSpacing} mm c/c = ${results.Ast_provided.toFixed(0)} mm²/m`, 20, y);
+            y += 10;
+            
+            // Design Summary
+            doc.setFontSize(12);
+            doc.text("Design Summary:", 14, y);
+            doc.setFontSize(10);
+            y += 7;
+            
+            doc.text(`Footing Size: ${results.footingLength.toFixed(2)} m × ${results.footingWidth.toFixed(2)} m × ${results.D.toFixed(2)} m`, 14, y);
+            y += 7;
+            doc.text(`Effective Depth: ${(results.d*1000).toFixed(0)} mm`, 14, y);
+            y += 7;
+            doc.text(`Main Reinforcement: ${inputs.barDia} mm @ ${inputs.barSpacing} mm c/c`, 14, y);
+            y += 7;
+            doc.text(`Design Status: ${results.designSafe ? 'SAFE' : 'UNSAFE'}`, 14, y);
+            y += 10;
+            
+            // Notes
+            doc.setFontSize(10);
+            doc.text("Notes:", 14, y);
+            doc.text("- All calculations based on IS 456:2000", 14, y+7);
+            doc.text("- Cover assumed as 50mm for reinforcement", 14, y+14);
+            doc.text("- One-way shear values as per IS 456:2000 Table 19", 14, y+21);
+            doc.text("- Two-way shear includes size effect and column aspect ratio factors", 14, y+28);
+            doc.text("- For exact site conditions, consult structural engineer", 14, y+35);
+            
+            // Footer
+            doc.setFontSize(8);
+            doc.text("Designed by Structural Design Software", 105, 285, { align: 'center' });
+            
+            // Save PDF
+            doc.save(`Footing_Design_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+    </script>
+</body>
+</html>

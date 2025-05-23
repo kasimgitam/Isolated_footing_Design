@@ -1,1 +1,0 @@
-# Isolated_footing_Design
